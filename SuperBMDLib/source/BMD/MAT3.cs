@@ -67,12 +67,12 @@ namespace SuperBMDLib.BMD
 
         private static string[] delimiter = new string[] {":" };
 
-        public MAT3(EndianBinaryReader reader, int offset, BMDInfo modelstats=null)
+        public MAT3(EndianBinaryReader reader, int offset, BMDInfo modelstats=null, bool bmd2=false)
         {
             InitLists();
 
             reader.BaseStream.Seek(offset, System.IO.SeekOrigin.Begin);
-
+            
             reader.SkipInt32();
             int mat3Size = reader.ReadInt32();
             int matCount = reader.ReadInt16();
@@ -85,6 +85,22 @@ namespace SuperBMDLib.BMD
 
             for (Mat3OffsetIndex i = 0; i <= Mat3OffsetIndex.NBTScaleData; ++i)
             {
+                if (bmd2)
+                {
+                    // According to https://github.com/magcius/bmdview/blob/master/mat3.cpp the following
+                    // sections are missing in MAT2 sections
+                    if (i == Mat3OffsetIndex.IndirectData ||
+                        i == Mat3OffsetIndex.AmbientColorData ||
+                        i == Mat3OffsetIndex.LightData ||
+                        i == Mat3OffsetIndex.ZCompLoc ||
+                        i == Mat3OffsetIndex.DitherData ||
+                        i == Mat3OffsetIndex.NBTScaleData) {
+
+                        continue;
+                    }
+                }
+
+
                 int sectionOffset = reader.ReadInt32();
 
                 if (sectionOffset == 0)
@@ -287,7 +303,7 @@ namespace SuperBMDLib.BMD
             m_Materials = new List<Material>();
             for (int i = 0; i <= highestMatIndex; i++)
             {
-                LoadInitData(reader, m_RemapIndices[i]);
+                LoadInitData(reader, m_RemapIndices[i], bmd2);
             }
 
             reader.BaseStream.Seek(offset + mat3Size, System.IO.SeekOrigin.Begin);
@@ -304,7 +320,7 @@ namespace SuperBMDLib.BMD
             m_Materials = matCopies;
         }
 
-        private void LoadInitData(EndianBinaryReader reader, int matindex)
+        private void LoadInitData(EndianBinaryReader reader, int matindex, bool bmd2=false)
         {
             Material mat = new Material();
             mat.Name = m_MaterialNames[matindex];
@@ -319,21 +335,39 @@ namespace SuperBMDLib.BMD
             {
                 mat.IndTexEntry = m_IndirectTexBlock[matindex];
             }
-            else
+            else if (!bmd2)
             {
                 Console.WriteLine("Warning: Material {0} referenced an out of range IndirectTexBlock index", mat.Name);
             }
 
-            mat.ZCompLoc = m_zCompLocBlock[reader.ReadByte()];
+            if (bmd2)
+            {
+                reader.ReadByte();
+            }
+            else
+            {
+                mat.ZCompLoc = m_zCompLocBlock[reader.ReadByte()];
+            }
+            
+
             int zmode_index = reader.ReadByte();
             mat.ZMode = m_zModeBlock[zmode_index];
-
-            if (m_ditherBlock == null)
+            if (m_ditherBlock == null || bmd2)
                 reader.SkipByte();
             else
-                mat.Dither = m_ditherBlock[reader.ReadByte()];
+            {
+                int ditherindex = reader.ReadByte();
+                if (ditherindex < m_ditherBlock.Count)
+                {
+                    mat.Dither = m_ditherBlock[ditherindex];
+                }
+                else
+                {
+                    Console.WriteLine("Warning: Material {0} used an out of range dither index: {1}", mat.Name, ditherindex);
+                }
+            }
 
-            int matColorIndex = reader.ReadInt16();
+                int matColorIndex = reader.ReadInt16();
             if (matColorIndex != -1)
                 mat.MaterialColors[0] = m_MaterialColorBlock[matColorIndex];
             matColorIndex = reader.ReadInt16();
@@ -352,25 +386,35 @@ namespace SuperBMDLib.BMD
                     Console.WriteLine(string.Format("Warning for material {0} i={2}, color channel index out of range: {1}", mat.Name, chanIndex, i));
                 }
             }
-            for (int i = 0; i < 2; i++) {
-                int ambColorIndex = reader.ReadInt16();
-                if (ambColorIndex == -1)
-                    continue;
-                else if (ambColorIndex < m_AmbientColorBlock.Count) {
-                    mat.AmbientColors[i] = m_AmbientColorBlock[ambColorIndex];
-                }
-                else {
-                    Console.WriteLine(string.Format("Warning for material {0} i={2}, ambient color index out of range: {1}", mat.Name, ambColorIndex, i));
+
+            if (!bmd2)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    int ambColorIndex = reader.ReadInt16();
+                    if (ambColorIndex == -1)
+                        continue;
+                    else if (ambColorIndex < m_AmbientColorBlock.Count)
+                    {
+                        mat.AmbientColors[i] = m_AmbientColorBlock[ambColorIndex];
+                    }
+                    else
+                    {
+                        Console.WriteLine(string.Format("Warning for material {0} i={2}, ambient color index out of range: {1}", mat.Name, ambColorIndex, i));
+                    }
                 }
             }
 
-            for (int i = 0; i  < 8; i++)
+            if (!bmd2)
             {
-                int lightIndex = reader.ReadInt16();
-                if ((lightIndex == -1) || (lightIndex > m_LightingColorBlock.Count) || (m_LightingColorBlock.Count == 0))
-                    continue;
-                else
-                    mat.LightingColors[i] = m_LightingColorBlock[lightIndex];
+                for (int i = 0; i < 8; i++)
+                {
+                    int lightIndex = reader.ReadInt16();
+                    if ((lightIndex == -1) || (lightIndex > m_LightingColorBlock.Count) || (m_LightingColorBlock.Count == 0))
+                        continue;
+                    else
+                        mat.LightingColors[i] = m_LightingColorBlock[lightIndex];
+                }
             }
 
             for (int i = 0; i < 8; i++)
@@ -494,7 +538,15 @@ namespace SuperBMDLib.BMD
             mat.FogInfo = m_FogBlock[reader.ReadInt16()];
             mat.AlphCompare = m_AlphaCompBlock[reader.ReadInt16()];
             mat.BMode = m_blendModeBlock[reader.ReadInt16()];
-            mat.NBTScale = m_NBTScaleBlock[reader.ReadInt16()];
+
+            if (bmd2)
+            {
+                reader.ReadInt16();
+            }
+            else
+            {
+                mat.NBTScale = m_NBTScaleBlock[reader.ReadInt16()];
+            }
             //mat.Debug_Print();
             m_Materials.Add(mat);
         }

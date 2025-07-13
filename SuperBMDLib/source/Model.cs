@@ -91,7 +91,16 @@ namespace SuperBMDLib
 
             if (j3d2Magic != 0x4A334432)
                 throw new Exception("Model was not a BMD or BDL! (J3D2 magic not found)");
-            if ((modelMagic != 0x62646C34) && (modelMagic != 0x626D6433))
+
+
+            bool bmd2 = false;
+            if (modelMagic == 0x626D6432)
+            {
+                Console.WriteLine("J3D2bmd2 magic detected: This is a legacy format version with missing material data fields compared to the final version.");
+                Console.WriteLine("Following data is missing and has been replaced by default SuperBMD values: indirect data, ambient color, light data, ZCompLoc, dither, NBT scale data");
+                bmd2 = true;
+            }
+            else if ((modelMagic != 0x62646C34) && (modelMagic != 0x626D6433))
                 throw new Exception("Model was not a BMD or BDL! (Model type was not bmd3 or bdl4)");
 
             int modelSize = reader.ReadInt32();
@@ -109,7 +118,7 @@ namespace SuperBMDLib
             SkinningEnvelopes.SetInverseBindMatrices(Joints.FlatSkeleton);
             Shapes            = SHP1.Create(reader, (int)reader.BaseStream.Position, ModelStats);
             Shapes.SetVertexWeights(SkinningEnvelopes, PartialWeightData);
-            Materials         = new MAT3(reader, (int)reader.BaseStream.Position, ModelStats);
+            Materials         = new MAT3(reader, (int)reader.BaseStream.Position, ModelStats, bmd2);
             SkipMDL3(reader);
             Textures          = new TEX1(reader, (int)reader.BaseStream.Position, ModelStats);
             Materials.SetTextureNames(Textures);

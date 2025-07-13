@@ -1232,6 +1232,11 @@ namespace SuperBMDLib.Materials
 
         private static void UnpackPixelFromPalette(int paletteIndex, ref byte[] dest, int offset, byte[] paletteData, PaletteFormats format)
         {
+            if (paletteData.Length == 0)
+            {
+                return; 
+            }
+
             switch (format)
             {
                 case PaletteFormats.IA8:
@@ -1240,6 +1245,7 @@ namespace SuperBMDLib.Materials
                     break;
                 case PaletteFormats.RGB565:
                     {
+
                         ushort palettePixelData = (ushort)((Buffer.GetByte(paletteData, 2 * paletteIndex) << 8) | Buffer.GetByte(paletteData, 2 * paletteIndex + 1));
                         RGB565ToRGBA8(palettePixelData, ref dest, offset);
                     }

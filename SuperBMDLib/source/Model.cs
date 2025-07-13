@@ -286,8 +286,8 @@ namespace SuperBMDLib
 
             Console.WriteLine();
             Console.WriteLine("Generating the Mesh Data ->");
-            Shapes = SHP1.Create(scene, Joints.BoneNameIndices, VertexData.Attributes, SkinningEnvelopes, PartialWeightData, 
-                args.tristrip_mode, args.include_normals, args.degenerateTriangles, args.add_envtex_attribute, mat_presets);
+            Shapes = SHP1.Create(scene, Joints.BoneNameIndices, VertexData.Attributes, SkinningEnvelopes, PartialWeightData,
+                args.tristrip_mode, args.include_normals, args.degenerateTriangles, args.add_envtex_attribute, args.flip_faces, mat_presets);
 
             //Joints.UpdateBoundingBoxes(VertexData);
 

@@ -148,10 +148,16 @@ namespace SuperBMDLib.BMD
         }
 
         private SHP1(Assimp.Scene scene, VertexData vertData, Dictionary<string, int> boneNames, EVP1 envelopes, DRW1 partialWeight,
-            string tristripMode = "static", bool include_normals = false, bool degenerateTriangles = false, bool addEnvAttrib = false, List<Materials.Material> mat_presets = null)
+            string tristripMode = "static", bool include_normals = false, bool degenerateTriangles = false, bool addEnvAttrib = false, 
+            bool flip_faces = false, List<Materials.Material> mat_presets = null)
         {
             Shapes = new List<Shape>();
             RemapTable = new List<int>();
+
+            if (flip_faces)
+            {
+                Console.WriteLine("Flip Faces enabled. Winding order of faces has been turned around (Affects culling but not vertex normals)");
+            }
 
             foreach (Mesh mesh in scene.Meshes)
             {
@@ -188,7 +194,7 @@ namespace SuperBMDLib.BMD
                 }
 
                 if (boneNames.Count > 1 && !forceUnweighted)
-                    meshShape.ProcessVerticesWithWeights(mesh, vertData, boneNames, envelopes, partialWeight, tristripMode == "all", degenerateTriangles);
+                    meshShape.ProcessVerticesWithWeights(mesh, vertData, boneNames, envelopes, partialWeight, tristripMode == "all", degenerateTriangles, flip_faces);
                 else
                 {
                     
@@ -213,7 +219,7 @@ namespace SuperBMDLib.BMD
                     partialWeight.WeightTypeCheck.Add(false);
                     partialWeight.Indices.Add(jointindex);
 
-                    meshShape.ProcessVerticesWithoutWeights(mesh, vertData, envelopes, degenerateTriangles, jointindex, partialWeight.Indices.Count-1, transformVerts);
+                    meshShape.ProcessVerticesWithoutWeights(mesh, vertData, envelopes, degenerateTriangles, jointindex, partialWeight.Indices.Count-1, transformVerts, flip_faces);
                     
                     Console.WriteLine("Assigned joint index {0} to {1}", jointindex, mesh.Name);
                     
@@ -230,9 +236,10 @@ namespace SuperBMDLib.BMD
         }
 
         public static SHP1 Create(Scene scene, Dictionary<string, int> boneNames, VertexData vertData, EVP1 evp1, DRW1 drw1,
-            string tristrip_mode = "static", bool include_normals = false, bool degenerateTriangles = false, bool addEnvAttrib = false, List<Materials.Material> mat_presets = null)
+            string tristrip_mode = "static", bool include_normals = false, bool degenerateTriangles = false, bool addEnvAttrib = false, 
+            bool flip_faces = false, List<Materials.Material> mat_presets = null)
         {
-            SHP1 shp1 = new SHP1(scene, vertData, boneNames, evp1, drw1, tristrip_mode, include_normals, degenerateTriangles, addEnvAttrib, mat_presets);
+            SHP1 shp1 = new SHP1(scene, vertData, boneNames, evp1, drw1, tristrip_mode, include_normals, degenerateTriangles, addEnvAttrib, flip_faces, mat_presets);
 
             return shp1;
         }

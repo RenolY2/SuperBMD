@@ -42,6 +42,7 @@ namespace SuperBMDLib
         public byte texfraction;
         public Scenegraph.Enums.TransformMode transform_mode;
         public bool add_envtex_attribute;
+        public bool flip_faces;
 
         /// <summary>
         /// Initializes a new Arguments instance from the arguments passed in to SuperBMD.
@@ -83,6 +84,7 @@ namespace SuperBMDLib
             texfraction = 8;
             transform_mode = Scenegraph.Enums.TransformMode.Xsi;
             add_envtex_attribute = false;
+            flip_faces = false;
             int positional_arguments = 0;
 
             for (int i = 0; i < args.Length; i++)
@@ -236,6 +238,9 @@ namespace SuperBMDLib
                         break;
                     case "--envtex_attribute":
                         add_envtex_attribute = true;
+                        break;
+                    case "--flip_faces":  // Flip face orientation without flipping the normals
+                        flip_faces = true;
                         break;
                     default:
                         if (positional_arguments == 0) {

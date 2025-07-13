@@ -111,20 +111,32 @@ namespace SuperBMDLib.Geometry
             }
         }
 
-        uint[] MakeTriIndexList(Mesh mesh) {
+        uint[] MakeTriIndexList(Mesh mesh, bool flip_faces) {
             uint[] triindices = new uint[mesh.Faces.Count * 3];
 
             int i = 0;
             foreach (Face face in mesh.Faces) {
-                for (int j = 0; j < 3; j++) {
-                    if (face.Indices.Count < 3) {
-                        throw new System.Exception(
-                            String.Format(
-                                "A face in mesh {1} has less than 3 vertices (loose vertex or edge). " +
-                                "You need to remove it.", i, mesh.Name)
-                            );
+                if (face.Indices.Count < 3)
+                {
+                    throw new System.Exception(
+                        String.Format(
+                            "A face in mesh {1} has less than 3 vertices (loose vertex or edge). " +
+                            "You need to remove it.", i, mesh.Name)
+                        );
+                }
+                if (flip_faces)
+                {
+                    triindices[i * 3 + 0] = (uint)face.Indices[2 - 0];
+                    triindices[i * 3 + 2] = (uint)face.Indices[2 - 1];
+                    triindices[i * 3 + 1] = (uint)face.Indices[2 - 2];
+                }
+                else
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+
+                        triindices[i * 3 + j] = (uint)face.Indices[2 - j];
                     }
-                    triindices[i * 3 + j] = (uint)face.Indices[2-j];
                 }
 
                 i += 1;
@@ -132,7 +144,8 @@ namespace SuperBMDLib.Geometry
             return triindices;
         }
 
-        public void ProcessVerticesWithoutWeights(Mesh mesh, VertexData vertData, EVP1 envelopes, bool degenerateTriangles = false, int jointindex = 0, int mtxindex = 0, bool transformverts = false)
+        public void ProcessVerticesWithoutWeights(Mesh mesh, VertexData vertData, EVP1 envelopes, bool degenerateTriangles = false, int jointindex = 0, int mtxindex = 0, 
+            bool transformverts = false, bool flip_faces = false)
         {
             Packet pack = new Packet();
 
@@ -142,7 +155,7 @@ namespace SuperBMDLib.Geometry
 
             //Console.WriteLine("Calculating triangle strips");
 
-            uint[] triindices = MakeTriIndexList(mesh);
+            uint[] triindices = MakeTriIndexList(mesh, flip_faces);
             TriStripper stripper = new TriStripper(triindices);
             List<PrimitiveBrawl> primlist = stripper.Strip();
 
@@ -322,7 +335,7 @@ namespace SuperBMDLib.Geometry
         }
 
         public void ProcessVerticesWithWeights(Mesh mesh, VertexData vertData, Dictionary<string, int> boneNames, EVP1 envelopes, DRW1 partialWeight, 
-            bool doStrip = true, bool degenerateTriangles = false)
+            bool doStrip = true, bool degenerateTriangles = false, bool flip_faces = false)
         {
             Weight[] weights = new Weight[mesh.Vertices.Count];
 
@@ -345,7 +358,7 @@ namespace SuperBMDLib.Geometry
             AttributeData.SetAttributesFromList(activeAttribs);
 
             
-            uint[] triindices = MakeTriIndexList(mesh);
+            uint[] triindices = MakeTriIndexList(mesh, flip_faces);
 
             List<PrimitiveBrawl> primlist;
 

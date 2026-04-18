@@ -120,7 +120,7 @@ namespace SuperBMDLib
             Shapes.SetVertexWeights(SkinningEnvelopes, PartialWeightData);
             Materials         = new MAT3(reader, (int)reader.BaseStream.Position, ModelStats, bmd2);
             SkipMDL3(reader);
-            Textures          = new TEX1(reader, (int)reader.BaseStream.Position, ModelStats);
+            Textures          = new TEX1(reader, (int)reader.BaseStream.Position, ModelStats, args.tphd_compatibility);
             Materials.SetTextureNames(Textures);
 
             

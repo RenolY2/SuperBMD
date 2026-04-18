@@ -186,17 +186,18 @@ namespace SuperBMDLib.Materials
         /// <param name="stream"></param>
         /// <param name="headerStart"></param>
         /// <param name="imageIndex">Optional additional offset used by J3D models. Multiplied by 0x20.</param>
-        public void Load(EndianBinaryReader stream, long headerStart, int imageIndex = 0)
+        public void Load(EndianBinaryReader stream, long headerStart, int imageIndex = 0, bool tphd_compatibility = false, long nametable = -1)
         {
-            Format = (TextureFormats)stream.ReadByte();
-            AlphaSetting = stream.ReadByte();
-            Width = stream.ReadUInt16();
-            Height = stream.ReadUInt16();
-            WrapS = (WrapModes)stream.ReadByte();
-            WrapT = (WrapModes)stream.ReadByte();
-            PalettesEnabled = Convert.ToBoolean(stream.ReadByte());
-            PaletteFormat = (PaletteFormats)stream.ReadByte();
-            PaletteCount = stream.ReadUInt16();
+            var currentPosition = stream.BaseStream.Position;
+            Format = (TextureFormats)stream.ReadByte();             // 0
+            AlphaSetting = stream.ReadByte();                       // 1
+            Width = stream.ReadUInt16();                            // 2
+            Height = stream.ReadUInt16();                           // 4
+            WrapS = (WrapModes)stream.ReadByte();                   // 5
+            WrapT = (WrapModes)stream.ReadByte();                   // 6
+            PalettesEnabled = Convert.ToBoolean(stream.ReadByte()); // 7
+            PaletteFormat = (PaletteFormats)stream.ReadByte();      // 8
+            PaletteCount = stream.ReadUInt16();                     // 9
             int paletteDataOffset = stream.ReadInt32();
             //EmbeddedPaletteOffset = stream.ReadInt32();
             MipMap = stream.ReadByte();
@@ -222,8 +223,8 @@ namespace SuperBMDLib.Materials
             // Now load and decode image data into an ARGB array.
             stream.BaseStream.Position = headerStart + imageDataOffset + (0x20 * imageIndex);
 
-            if (imageDataOffset == 0) {
-                Console.WriteLine("Texture {0} has missing texture data. Crearting a full white texture...", Name);
+            if (imageDataOffset == 0 || tphd_compatibility || (nametable > 0 && currentPosition+imageDataOffset == nametable)) {
+                Console.WriteLine("Texture {0} has missing texture data. Creating a full white texture...", Name);
                 m_rgbaImageData = new byte[Width * Height * 4];
                 m_rgbaMipImageData = new List<byte[]>();
                 for (uint i = 0; i < Width*Height; i++) {

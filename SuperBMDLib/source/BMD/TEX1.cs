@@ -14,7 +14,7 @@ namespace SuperBMDLib.BMD
     {
         public List<BinaryTextureImage> Textures { get; private set; }
 
-        public TEX1(EndianBinaryReader reader, int offset, BMDInfo modelstats=null)
+        public TEX1(EndianBinaryReader reader, int offset, BMDInfo modelstats=null, bool tphd_compatibility=false)
         {
             Textures = new List<BinaryTextureImage>();
 
@@ -34,13 +34,14 @@ namespace SuperBMDLib.BMD
             List<string> names = NameTableIO.Load(reader, offset + textureNameTableOffset);
 
             reader.BaseStream.Seek(textureHeaderOffset + offset, System.IO.SeekOrigin.Begin);
+            long nametable_start = offset + textureNameTableOffset;
 
             for (int i = 0; i < texCount; i++)
             {
                 reader.BaseStream.Seek((offset + 0x20 + (0x20 * i)), System.IO.SeekOrigin.Begin);
 
                 BinaryTextureImage img = new BinaryTextureImage(names[i]);
-                img.Load(reader, (offset + 0x20 + (0x20 * i)));
+                img.Load(reader, (offset + 0x20 + (0x20 * i)), 0, tphd_compatibility, nametable_start);
                 Textures.Add(img);
             }
         }

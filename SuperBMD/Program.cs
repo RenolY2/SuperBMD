@@ -34,8 +34,48 @@ namespace SuperBMDLib
                 DisplayHelp();
                 return;
             }
+            var currpath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var configpath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(currpath), "config.json");
 
             Arguments cmd_args = new Arguments(args);
+
+            JsonSerializer serializer = new JsonSerializer();
+
+            serializer.Converters.Add(
+                (new Newtonsoft.Json.Converters.StringEnumConverter())
+            );
+            try
+            {
+                Console.WriteLine("Config found, loading arguments.");
+                using (TextReader file = File.OpenText(configpath))
+                {
+                    using (JsonTextReader reader = new JsonTextReader(file))
+                    {
+                        var configargs = serializer.Deserialize<Arguments>(reader);
+
+                        if (configargs.tphd_compatibility)
+                        {
+                            cmd_args.tphd_compatibility = true;
+                            Console.WriteLine("Config: TPHD Compatibility enabled");
+                        }
+
+                        if (configargs.material_order_strict)
+                        {
+                            cmd_args.material_order_strict = true;
+                            Console.WriteLine("Config: Strict material order enabled");
+                        }
+
+                        cmd_args.vertextype = configargs.vertextype;
+                        cmd_args.fraction = configargs.fraction;
+                        Console.WriteLine("Config: Adjusted vertex type and fraction");
+                    }
+                }
+            }
+            catch (System.IO.FileNotFoundException e)
+            {
+                Console.WriteLine("No config found, continuing.");
+            }
+
 
             List<Material> mat_presets = null;
             Model mod;
@@ -78,11 +118,7 @@ namespace SuperBMDLib
                     }
                 }
 
-                JsonSerializer serializer = new JsonSerializer();
-
-                serializer.Converters.Add(
-                    (new Newtonsoft.Json.Converters.StringEnumConverter())
-                );
+                
                 Console.WriteLine("Reading the Materials...");
                 mat_presets = new List<Material>();
 

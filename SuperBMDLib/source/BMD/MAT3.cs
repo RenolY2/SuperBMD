@@ -72,8 +72,17 @@ namespace SuperBMDLib.BMD
             InitLists();
 
             reader.BaseStream.Seek(offset, System.IO.SeekOrigin.Begin);
-            
-            reader.SkipInt32();
+            var header = reader.ReadInt32();
+
+
+            // Mat4 has two extra bytes in Material Init data and an extra data section. We will ignore it though.
+            bool mat4 = (header == 0x4D415434); 
+            if (mat4)
+            {
+                Console.WriteLine("MAT4 detected: Extra MAT4 data will be ignored");
+            }
+
+            //reader.SkipInt32();
             int mat3Size = reader.ReadInt32();
             int matCount = reader.ReadInt16();
             long matInitOffset = 0;
@@ -303,7 +312,7 @@ namespace SuperBMDLib.BMD
             m_Materials = new List<Material>();
             for (int i = 0; i <= highestMatIndex; i++)
             {
-                LoadInitData(reader, m_RemapIndices[i], bmd2);
+                LoadInitData(reader, m_RemapIndices[i], bmd2, mat4);
             }
 
             reader.BaseStream.Seek(offset + mat3Size, System.IO.SeekOrigin.Begin);
@@ -320,14 +329,14 @@ namespace SuperBMDLib.BMD
             m_Materials = matCopies;
         }
 
-        private void LoadInitData(EndianBinaryReader reader, int matindex, bool bmd2=false)
+        private void LoadInitData(EndianBinaryReader reader, int matindex, bool bmd2=false, bool mat4=false)
         {
             Material mat = new Material();
             mat.Name = m_MaterialNames[matindex];
             mat.Flag = reader.ReadByte();
             mat.CullMode = m_CullModeBlock[reader.ReadByte()];
-
-            mat.ColorChannelControlsCount = NumColorChannelsBlock[reader.ReadByte()];
+            var colorindex = reader.ReadByte();
+            mat.ColorChannelControlsCount = NumColorChannelsBlock[colorindex];
             mat.NumTexGensCount = NumTexGensBlock[reader.ReadByte()];
             mat.NumTevStagesCount = NumTevStagesBlock[reader.ReadByte()];
 
@@ -546,6 +555,11 @@ namespace SuperBMDLib.BMD
             else
             {
                 mat.NBTScale = m_NBTScaleBlock[reader.ReadInt16()];
+            }
+
+            if (mat4)
+            {
+                reader.ReadInt16(); // W
             }
             //mat.Debug_Print();
             m_Materials.Add(mat);

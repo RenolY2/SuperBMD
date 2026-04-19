@@ -46,9 +46,9 @@ namespace SuperBMDLib
             );
             try
             {
-                Console.WriteLine("Config found, loading arguments.");
                 using (TextReader file = File.OpenText(configpath))
                 {
+                    Console.WriteLine("Config found, loading arguments.");
                     using (JsonTextReader reader = new JsonTextReader(file))
                     {
                         var configargs = serializer.Deserialize<Arguments>(reader);
